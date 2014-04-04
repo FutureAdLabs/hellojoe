@@ -1,0 +1,28 @@
+{
+  "name": "notp",
+  "version": "0.0.0",
+  "description": "Not OTP.",
+  "author": "Bodil Stokke",
+  "license": "Apache-2",
+  "homepage": "https://bitbucket.org/futureadlabs/notp",
+  "repository": {
+    "type": "git",
+    "url": "git@bitbucket.org:futureadlabs/notp.git"
+  },
+  "keywords": [
+    "cluster",
+    "scaling",
+    "high availability",
+    "erlang"
+  ],
+  "scripts": {
+    "compile": "tsc --declaration --sourcemap --module commonjs --outDir . src/notp.ts",
+    "watch": "tsc --watch --declaration --sourcemap --module commonjs --outDir . src/notp.ts",
+    "prepublish": "npm run compile"
+  },
+  "dependencies": {
+    "typescript": "1.0.0",
+    "merge": "^1.1.2"
+  },
+  "main": "./notp.js"
+}
