@@ -4,9 +4,9 @@ nOTP
 Not OTP.
 
 nOTP is built on top of Node's `cluster` module to manage worker
-threads. It allows you to write your application in an Erlang like
-style, where if something goes wrong, crashing the whole process is
-the acceptable and preferred way of handling it.
+threads. It allows you to write your application in a vaguely Erlang
+like style, where if something goes wrong, crashing the whole process
+is the acceptable and preferred way of handling it.
 
 ## Usage
 
@@ -14,6 +14,9 @@ Call `notp.serve` with a configuration object (can be empty, the
 defaults are OK) and a function containing your main application code.
 It should be the first and only thing your application does. Do *not*
 initialise any resources before calling this function.
+
+Thanks to the `cluster` module, any network sockets your subprocesses
+initialise will be shared between them.
 
 ```js
 var notp = require("notp");
