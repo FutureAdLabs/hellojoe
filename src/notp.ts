@@ -22,9 +22,20 @@ export interface ScaleOptions {
    * If a process runs for less than this time, it's considered a failure.
    */
   failureThreshold?: number;
+  /**
+   * Path to worker executable; defaults to same as master.
+   *
+   * If different from master, nOTP is not guaranteed to call the
+   * worker function you pass in. Presumably, this is desired.
+   */
+  worker?: string;
+  /**
+   * Command line arguments for worker executable; defaults to same as master.
+   */
+  workerArgs?: string[];
 }
 
-export function serve(options: ScaleOptions, app: () => void): void {
+export function serve(options: ScaleOptions, app?: () => void): void {
   var i, startTimes = {}, failures = 0;
   options = merge({
     cores: defaultCores,
@@ -43,6 +54,11 @@ export function serve(options: ScaleOptions, app: () => void): void {
   }
 
   if (cluster.isMaster) {
+    var masterOpts: any = {};
+    if (options.worker) masterOpts.exec = options.worker;
+    if (options.workerArgs) masterOpts.args = options.workerArgs;
+    cluster.setupMaster(masterOpts);
+
     // Spawn more overlords
     for (i = 0; i < options.cores; i++) {
       spawnMore();

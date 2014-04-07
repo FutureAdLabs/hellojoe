@@ -22,6 +22,13 @@ function serve(options, app) {
     }
 
     if (cluster.isMaster) {
+        var masterOpts = {};
+        if (options.worker)
+            masterOpts.exec = options.worker;
+        if (options.workerArgs)
+            masterOpts.args = options.workerArgs;
+        cluster.setupMaster(masterOpts);
+
         for (i = 0; i < options.cores; i++) {
             spawnMore();
         }
