@@ -1,7 +1,7 @@
 nOTP
 ====
 
-Not OTP.
+Definitely not OTP.
 
 nOTP is built on top of Node's `cluster` module to manage worker
 threads. It allows you to write your application in a vaguely Erlang
@@ -10,10 +10,13 @@ is the acceptable and preferred way of handling it.
 
 ## Usage
 
-Call `notp.serve` with a configuration object (can be empty, the
+Call `notp.serve` with a configuration object (can be null, the
 defaults are OK) and a function containing your main application code.
 It should be the first and only thing your application does. Do *not*
-initialise any resources before calling this function.
+initialise any resources before calling this function. The worker
+processes will run your function, and anything outside of it gets run
+by both worker processes and the master process. You don't want the
+master process to do any work other than starting worker processes.
 
 Thanks to the `cluster` module, any network sockets your subprocesses
 initialise will be shared between them.
@@ -38,9 +41,13 @@ values:
   cores: n, // n == the physical number of cores on the running machine
   failureThreshold: 5000, // minimum lifetime (ms) of a process not considered a failure
   retryThreshold: 23, // amount of consecutive failures before retryDelay is triggered
-  retryDelay: 10000 // delay (ms) before spawning processes after consecutive failures
+  retryDelay: 10000, // delay (ms) before spawning processes after consecutive failures
+  worker: null, // optional filename to execute as worker process, replacing the function
+  workerArgs: [] // if worker is specified, command line arguments can be provided
 }
 ```
+
+Please note that if you specify a worker script, it will be executed using the `child_process` module, not the `cluster` module, meaning that sockets won't be automatically shared between worker processes.
 
 # License
 

@@ -1,6 +1,7 @@
 declare var require: (module: string) => any;
 
 var cluster = require("cluster");
+var child = require("child_process");
 var merge = require("merge");
 
 var defaultCores = require("os").cpus().length;
@@ -23,14 +24,15 @@ export interface ScaleOptions {
    */
   failureThreshold?: number;
   /**
-   * Path to worker executable; defaults to same as master.
-   *
-   * If different from master, nOTP is not guaranteed to call the
-   * worker function you pass in. Presumably, this is desired.
+   * Optional path to a worker executable, in which case this nOTP instance
+   * will spawn workers using the `child_process` module, as opposed to the
+   * `cluster` module, and the passed `app` function will be ignored, implying
+   * that sockets will not be automatically shared among processes.
    */
   worker?: string;
   /**
-   * Command line arguments for worker executable; defaults to same as master.
+   * Command line arguments for worker executable. Must be specified if
+   * `worker` is present.
    */
   workerArgs?: string[];
 }
@@ -44,36 +46,38 @@ export function serve(options: ScaleOptions, app?: () => void): void {
     failureThreshold: 5000
   }, options);
 
-  function spawnMore() {
-    var worker = cluster.fork();
-    startTimes[worker.id] = Date.now();
-    worker.on("listening", (addr) =>
-              console.log("Process", worker.process.pid, "is now listening on",
-                          addr.address + ":" + addr.port));
-    return worker;
+  function pid(worker) {
+    return options.worker ? worker.pid : worker.process.pid;
   }
 
-  if (cluster.isMaster) {
-    var masterOpts: any = {};
-    if (options.worker) masterOpts.exec = options.worker;
-    if (options.workerArgs) masterOpts.args = options.workerArgs;
-    cluster.setupMaster(masterOpts);
-
-    // Spawn more overlords
-    for (i = 0; i < options.cores; i++) {
-      spawnMore();
+  function spawnMore() {
+    var worker;
+    if (options.worker) {
+      worker = child.fork(options.worker, options.workerArgs);
+      // console.log("Spawning worker as child process:", options.worker, options.workerArgs);
+    } else {
+      worker = cluster.fork();
+      // console.log("Spawning worker in cluster.");
     }
+
+    startTimes[pid(worker)] = Date.now();
+    if (!options.worker) {
+      worker.on("listening", (addr) =>
+                console.log("Process", pid(worker), "is now listening on",
+                            addr.address + ":" + addr.port));
+    }
+
     // Enable Erlang mode
-    cluster.on("exit", (worker, code, signal) => {
-      var replacement, lifetime = Date.now() - startTimes[worker.id];
-      delete startTimes[worker.id];
+    worker.on("exit", (code, signal) => {
+      var replacement, lifetime = Date.now() - startTimes[pid(worker)];
+      delete startTimes[pid(worker)];
 
       if (worker.suicide) {
-        console.log("Worker", worker.process.pid, "terminated voluntarily.");
+        console.log("Worker", pid(worker), "terminated voluntarily.");
         return;
       }
 
-      console.log("Process", worker.process.pid, "terminated with signal", signal,
+      console.log("Process", pid(worker), "terminated with signal", signal,
                   "code", code + "; restarting.");
 
       if (lifetime < options.failureThreshold) {
@@ -91,12 +95,22 @@ export function serve(options: ScaleOptions, app?: () => void): void {
         replacement = spawnMore();
         replacement.on("online", () =>
                        console.log("Process", replacement.process.pid,
-                                   "has successfully replaced", worker.process.pid));
+                                   "has successfully replaced", pid(worker)));
       }, (failures > options.retryThreshold) ? options.retryDelay : 0);
     });
 
-    console.log("Spawned", options.cores, "instances.");
+    return worker;
+  }
+
+  if (cluster.isMaster) {
+    // Spawn more overlords
+    for (i = 0; i < options.cores; i++) {
+      spawnMore();
+    }
+
+    console.log("Spawned", options.cores, options.worker ? "worker processes."
+                : "server instances.");
   } else {
-    app();
+    options.worker || app();
   }
 }

@@ -16,14 +16,15 @@ export interface ScaleOptions {
     */
     failureThreshold?: number;
     /**
-    * Path to worker executable; defaults to same as master.
-    *
-    * If different from master, nOTP is not guaranteed to call the
-    * worker function you pass in. Presumably, this is desired.
+    * Optional path to a worker executable, in which case this nOTP instance
+    * will spawn workers using the `child_process` module, as opposed to the
+    * `cluster` module, and the passed `app` function will be ignored, implying
+    * that sockets will not be automatically shared among processes.
     */
     worker?: string;
     /**
-    * Command line arguments for worker executable; defaults to same as master.
+    * Command line arguments for worker executable. Must be specified if
+    * `worker` is present.
     */
     workerArgs?: string[];
 }
