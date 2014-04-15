@@ -24,7 +24,7 @@ export interface ScaleOptions {
    */
   failureThreshold?: number;
   /**
-   * Optional path to a worker executable, in which case this nOTP instance
+   * Optional path to a worker executable, in which case this Hello Joe instance
    * will spawn workers using the `child_process` module, as opposed to the
    * `cluster` module, and the passed `app` function will be ignored, implying
    * that sockets will not be automatically shared among processes.

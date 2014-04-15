@@ -1,16 +1,14 @@
-nOTP
-====
+Hello Joe
+=========
 
-Definitely not OTP.
-
-nOTP is built on top of Node's `cluster` module to manage worker
+Hello Joe is built on top of Node's `cluster` module to manage worker
 processes. It allows you to write your application in a vaguely Erlang
 like style, where if something goes wrong, crashing the whole process
 is the acceptable and preferred way of handling it.
 
 ## Usage
 
-Call `notp.serve` with a configuration object (can be null, the
+Call `hellojoe.serve` with a configuration object (can be null, the
 defaults are OK) and a function containing your main application code.
 It should be the first and only thing your application does. Do *not*
 initialise any resources before calling this function. The worker
@@ -22,14 +20,14 @@ Thanks to the `cluster` module, any network sockets your subprocesses
 initialise will be shared between them.
 
 ```js
-var notp = require("notp");
+var hellojoe = require("hellojoe");
 
-notp.serve({}, function app() {
+hellojoe.serve({}, function app() {
    /// my application code goes here
 });
 ```
 
-nOTP will launch a number of subprocesses running the provided
+Hello Joe will launch a number of subprocesses running the provided
 function, and the master process will be left in charge of monitoring
 them and restarting them as necessary.
 
@@ -38,16 +36,24 @@ values:
 
 ```js
 {
-  cores: n, // n == the physical number of cores on the running machine
-  failureThreshold: 5000, // minimum lifetime (ms) of a process not considered a failure
-  retryThreshold: 23, // amount of consecutive failures before retryDelay is triggered
-  retryDelay: 10000, // delay (ms) before spawning processes after consecutive failures
-  worker: null, // optional filename to execute as worker process, replacing the function
-  workerArgs: [] // if worker is specified, command line arguments can be provided
+  // n == the physical number of cores on the running machine
+  cores: n,
+  // minimum lifetime (ms) of a process not considered a failure
+  failureThreshold: 5000,
+  // amount of consecutive failures before retryDelay is triggered
+  retryThreshold: 23,
+  // delay (ms) before spawning processes after consecutive failures
+  retryDelay: 10000,
+  // optional filename to execute as worker process, replacing the function
+  worker: null,
+  // if worker is specified, command line arguments can be provided
+  workerArgs: []
 }
 ```
 
-Please note that if you specify a worker script, it will be executed using the `child_process` module, not the `cluster` module, meaning that sockets won't be automatically shared between worker processes.
+Please note that if you specify a worker script, it will be executed
+using the `child_process` module, not the `cluster` module, meaning
+that sockets won't be automatically shared between worker processes.
 
 # License
 

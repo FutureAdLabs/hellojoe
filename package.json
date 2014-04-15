@@ -1,5 +1,5 @@
 {
-  "name": "notp",
+  "name": "hellojoe",
   "version": "0.1.0",
   "description": "Robust automated worker processes in the spirit of Erlang",
   "author": {
@@ -7,10 +7,10 @@
     "email": "bodil@futureadlabs.com"
   },
   "license": "Apache-2",
-  "homepage": "https://github.com/FutureAdLabs/notp",
+  "homepage": "https://github.com/FutureAdLabs/hellojoe",
   "repository": {
     "type": "git",
-    "url": "https://github.com/FutureAdLabs/notp.git"
+    "url": "https://github.com/FutureAdLabs/hellojoe.git"
   },
   "keywords": [
     "cluster",
@@ -20,13 +20,13 @@
     "erlang"
   ],
   "scripts": {
-    "compile": "tsc --declaration --sourcemap --module commonjs --outDir . src/notp.ts",
-    "watch": "tsc --watch --declaration --sourcemap --module commonjs --outDir . src/notp.ts",
+    "compile": "tsc --declaration --sourcemap --module commonjs --outDir . src/hellojoe.ts",
+    "watch": "tsc --watch --declaration --sourcemap --module commonjs --outDir . src/hellojoe.ts",
     "prepublish": "npm run compile"
   },
   "dependencies": {
     "typescript": "1.0.0",
     "merge": "^1.1.2"
   },
-  "main": "./notp.js"
+  "main": "./hellojoe.js"
 }
