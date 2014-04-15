@@ -1,17 +1,21 @@
 {
   "name": "notp",
-  "version": "0.0.0",
-  "description": "Not OTP.",
-  "author": "Bodil Stokke",
+  "version": "0.1.0",
+  "description": "Robust automated worker processes in the spirit of Erlang",
+  "author": {
+    "name": "Bodil Stokke",
+    "email": "bodil@futureadlabs.com"
+  },
   "license": "Apache-2",
-  "homepage": "https://bitbucket.org/futureadlabs/notp",
+  "homepage": "https://github.com/FutureAdLabs/notp",
   "repository": {
     "type": "git",
-    "url": "git@bitbucket.org:futureadlabs/notp.git"
+    "url": "https://github.com/FutureAdLabs/notp.git"
   },
   "keywords": [
     "cluster",
     "scaling",
+    "process",
     "high availability",
     "erlang"
   ],

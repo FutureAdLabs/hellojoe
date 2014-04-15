@@ -4,7 +4,7 @@ nOTP
 Definitely not OTP.
 
 nOTP is built on top of Node's `cluster` module to manage worker
-threads. It allows you to write your application in a vaguely Erlang
+processes. It allows you to write your application in a vaguely Erlang
 like style, where if something goes wrong, crashing the whole process
 is the acceptable and preferred way of handling it.
 
