@@ -3,6 +3,7 @@ declare var require: (module: string) => any;
 var cluster = require("cluster");
 var child = require("child_process");
 var merge = require("merge");
+var log = require("winston");
 
 var defaultCores = require("os").cpus().length;
 
@@ -54,17 +55,18 @@ export function serve(options: ScaleOptions, app?: () => void): void {
     var worker;
     if (options.worker) {
       worker = child.fork(options.worker, options.workerArgs);
-      // console.log("Spawning worker as child process:", options.worker, options.workerArgs);
+      log.debug("Spawning worker %s as child process: %j %j",
+                pid(worker), options.worker, options.workerArgs);
     } else {
       worker = cluster.fork();
-      // console.log("Spawning worker in cluster.");
+      log.debug("Spawning worker in cluster:", pid(worker));
     }
 
     startTimes[pid(worker)] = Date.now();
     if (!options.worker) {
       worker.on("listening", (addr) =>
-                console.log("Process", pid(worker), "is now listening on",
-                            addr.address + ":" + addr.port));
+                log.info("Process", pid(worker), "is now listening on",
+                         addr.address + ":" + addr.port));
     }
 
     // Enable Erlang mode
@@ -73,11 +75,11 @@ export function serve(options: ScaleOptions, app?: () => void): void {
       delete startTimes[pid(worker)];
 
       if (worker.suicide) {
-        console.log("Worker", pid(worker), "terminated voluntarily.");
+        log.info("Worker", pid(worker), "terminated voluntarily.");
         return;
       }
 
-      console.log("Process", pid(worker), "terminated with signal", signal,
+      log.info("Process", pid(worker), "terminated with signal", signal,
                   "code", code + "; restarting.");
 
       if (lifetime < options.failureThreshold) {
@@ -87,15 +89,15 @@ export function serve(options: ScaleOptions, app?: () => void): void {
       }
 
       if (failures > options.retryThreshold) {
-        console.log(failures + " consecutive failures; pausing for",
-                    options.retryDelay + "ms before respawning.");
+        log.warn(failures + " consecutive failures; pausing for",
+                 options.retryDelay + "ms before respawning.");
       }
 
       setTimeout(() => {
         replacement = spawnMore();
         replacement.on("online", () =>
-                       console.log("Process", replacement.process.pid,
-                                   "has successfully replaced", pid(worker)));
+                       log.info("Process", replacement.process.pid,
+                                "has successfully replaced", pid(worker)));
       }, (failures > options.retryThreshold) ? options.retryDelay : 0);
     });
 
@@ -108,9 +110,10 @@ export function serve(options: ScaleOptions, app?: () => void): void {
       spawnMore();
     }
 
-    console.log("Spawned", options.cores, options.worker ? "worker processes."
-                : "server instances.");
+    log.info("Spawned", options.cores, options.worker ? "worker processes."
+             : "server instances.");
   } else {
+    log.handleExceptions();
     options.worker || app();
   }
 }

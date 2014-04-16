@@ -1,6 +1,7 @@
 var cluster = require("cluster");
 var child = require("child_process");
 var merge = require("merge");
+var log = require("winston");
 
 var defaultCores = require("os").cpus().length;
 
@@ -21,16 +22,16 @@ function serve(options, app) {
         var worker;
         if (options.worker) {
             worker = child.fork(options.worker, options.workerArgs);
-            // console.log("Spawning worker as child process:", options.worker, options.workerArgs);
+            log.debug("Spawning worker %s as child process: %j %j", pid(worker), options.worker, options.workerArgs);
         } else {
             worker = cluster.fork();
-            // console.log("Spawning worker in cluster.");
+            log.debug("Spawning worker in cluster:", pid(worker));
         }
 
         startTimes[pid(worker)] = Date.now();
         if (!options.worker) {
             worker.on("listening", function (addr) {
-                return console.log("Process", pid(worker), "is now listening on", addr.address + ":" + addr.port);
+                return log.info("Process", pid(worker), "is now listening on", addr.address + ":" + addr.port);
             });
         }
 
@@ -40,11 +41,11 @@ function serve(options, app) {
             delete startTimes[pid(worker)];
 
             if (worker.suicide) {
-                console.log("Worker", pid(worker), "terminated voluntarily.");
+                log.info("Worker", pid(worker), "terminated voluntarily.");
                 return;
             }
 
-            console.log("Process", pid(worker), "terminated with signal", signal, "code", code + "; restarting.");
+            log.info("Process", pid(worker), "terminated with signal", signal, "code", code + "; restarting.");
 
             if (lifetime < options.failureThreshold) {
                 failures++;
@@ -53,13 +54,13 @@ function serve(options, app) {
             }
 
             if (failures > options.retryThreshold) {
-                console.log(failures + " consecutive failures; pausing for", options.retryDelay + "ms before respawning.");
+                log.warn(failures + " consecutive failures; pausing for", options.retryDelay + "ms before respawning.");
             }
 
             setTimeout(function () {
                 replacement = spawnMore();
                 replacement.on("online", function () {
-                    return console.log("Process", replacement.process.pid, "has successfully replaced", pid(worker));
+                    return log.info("Process", replacement.process.pid, "has successfully replaced", pid(worker));
                 });
             }, (failures > options.retryThreshold) ? options.retryDelay : 0);
         });
@@ -72,8 +73,9 @@ function serve(options, app) {
             spawnMore();
         }
 
-        console.log("Spawned", options.cores, options.worker ? "worker processes." : "server instances.");
+        log.info("Spawned", options.cores, options.worker ? "worker processes." : "server instances.");
     } else {
+        log.handleExceptions();
         options.worker || app();
     }
 }
