@@ -6,7 +6,7 @@
     "name": "Bodil Stokke",
     "email": "bodil@futureadlabs.com"
   },
-  "license": "Apache-2",
+  "license": "Apache-2.0",
   "homepage": "https://github.com/FutureAdLabs/hellojoe",
   "repository": {
     "type": "git",
