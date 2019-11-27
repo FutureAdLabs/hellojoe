@@ -1,13 +1,19 @@
-declare var require: (module: string) => any;
 
-var cluster = require("cluster");
-var child = require("child_process");
-var merge = require("merge");
-var log = require("winston");
+import * as os from "os"
 
-var defaultCores = require("os").cpus().length;
+import * as cluster from "cluster";
+import * as merge from "merge";
+
+import spawnChildProcess from "./childProcess"
+import spawnClusterWorker from "./worker"
+
+const defaultCores = os.cpus().length
 
 export interface ScaleOptions {
+  /**
+   * Custom logger. Defaults to an implementation using `console.log`.
+   */
+  logger: Logger;
   /**
    * Number of worker processes to spawn.
    */
@@ -17,7 +23,7 @@ export interface ScaleOptions {
    */
   retryThreshold?: number;
   /**
-   * After a certain number of failures, delay this long before restarting workers.
+   * After a certain number of failures, delay this many milliseconds before restarting workers.
    */
   retryDelay?: number;
   /**
@@ -38,71 +44,53 @@ export interface ScaleOptions {
   workerArgs?: string[];
 }
 
-export function serve(options: ScaleOptions, app?: () => void): void {
-  var i, startTimes = {}, failures = 0;
-  options = merge({
-    cores: defaultCores,
-    retryThreshold: 23,
-    retryDelay: 10000,
-    failureThreshold: 5000
-  }, options);
+const defaultLogger = {
+  info: console.log,
+  debug: console.log,
+  warn: console.error,
+  handleExceptions: () => { }
+};
 
-  function pid(worker) {
-    return options.worker ? worker.pid : worker.process.pid;
+export interface Logger {
+  debug: (...args: any[]) => void;
+  info: (...args: any[]) => void;
+  warn: (...args: any[]) => void;
+  handleExceptions: () => void;
+}
+
+
+export interface ServeContext {
+  log: Logger,
+  startTimes: {[pid: number]: number},
+  failures: number,
+  options: ScaleOptions
+}
+
+export default function serve(options: ScaleOptions, app?: () => void): void {
+  let i: number;
+
+  options = merge(
+    {
+      cores: defaultCores,
+      logger: defaultLogger,
+      retryThreshold: 23,
+      retryDelay: 10000,
+      failureThreshold: 5000
+    },
+    options
+  )
+
+  const log = options.logger;
+
+  const ctx: ServeContext = {
+    log: options.logger,
+    startTimes: {}, // When a chi_pro was started
+    failures: 0, // keeping track of retries
+    options
   }
 
-  function spawnMore() {
-    var worker;
-    if (options.worker) {
-      worker = child.fork(options.worker, options.workerArgs);
-      log.debug("Spawning worker %s as child process: %j %j",
-                pid(worker), options.worker, options.workerArgs);
-    } else {
-      worker = cluster.fork();
-      log.debug("Spawning worker in cluster:", pid(worker));
-    }
-
-    startTimes[pid(worker)] = Date.now();
-    if (!options.worker) {
-      worker.on("listening", (addr) =>
-                log.info("Process", pid(worker), "is now listening on",
-                         addr.address + ":" + addr.port));
-    }
-
-    // Enable Erlang mode
-    worker.on("exit", (code, signal) => {
-      var replacement, lifetime = Date.now() - startTimes[pid(worker)];
-      delete startTimes[pid(worker)];
-
-      if (worker.suicide) {
-        log.info("Worker", pid(worker), "terminated voluntarily.");
-        return;
-      }
-
-      log.info("Process", pid(worker), "terminated with signal", signal,
-                  "code", code + "; restarting.");
-
-      if (lifetime < options.failureThreshold) {
-        failures++;
-      } else {
-        failures = 0;
-      }
-
-      if (failures > options.retryThreshold) {
-        log.warn(failures + " consecutive failures; pausing for",
-                 options.retryDelay + "ms before respawning.");
-      }
-
-      setTimeout(() => {
-        replacement = spawnMore();
-        replacement.on("online", () =>
-                       log.info("Process", replacement.process.pid,
-                                "has successfully replaced", pid(worker)));
-      }, (failures > options.retryThreshold) ? options.retryDelay : 0);
-    });
-
-    return worker;
-  }
+  // Passing down a servecontext as local this when spawning
+  const spawnMore = options.worker ? spawnChildProcess.bind(ctx) : spawnClusterWorker.bind(ctx);
 
   if (cluster.isMaster) {
     // Spawn more overlords
@@ -110,8 +98,11 @@ export function serve(options: ScaleOptions, app?: () => void): void {
       spawnMore();
     }
 
-    log.info("Spawned", options.cores, options.worker ? "worker processes."
-             : "server instances.");
+    log.info(
+      "Spawned",
+      options.cores,
+      options.worker ? "worker processes." : "server instances."
+    );
   } else {
     log.handleExceptions();
     options.worker || app();
