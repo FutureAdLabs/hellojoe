@@ -1,5 +1,5 @@
 {
-  "name": "hellojoe",
+  "name": "@adludio/hellojoe",
   "version": "1.0.0",
   "description": "Robust automated worker processes in the spirit of Erlang",
   "author": {
