@@ -20,16 +20,16 @@
     "erlang"
   ],
   "scripts": {
-    "compile": "tsc --declaration --sourcemap --module commonjs --outDir . src/hellojoe.ts",
-    "watch": "tsc --watch --declaration --sourcemap --module commonjs --outDir . src/hellojoe.ts",
+    "compile": "tsc",
+    "watch": "tsc --watch",
     "prepublish": "npm run compile"
   },
   "dependencies": {
-    "merge": "^1.2.1",
     "typescript": "^3.7.2"
   },
   "main": "./hellojoe.js",
   "devDependencies": {
-    "@types/node": "^12.12.14"
+    "@types/node": "^12.12.14",
+    "merge": "^1.2.1"
   }
 }
