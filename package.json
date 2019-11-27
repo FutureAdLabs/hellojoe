@@ -20,6 +20,7 @@
     "high availability",
     "erlang"
   ],
+  "files": ["hellojoe.d.ts", "hellojoe.js", "hellojoe.js.map"],
   "scripts": {
     "compile": "tsc",
     "watch": "tsc --watch",
