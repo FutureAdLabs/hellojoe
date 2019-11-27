@@ -1,6 +1,6 @@
 {
   "name": "@adludio/hellojoe",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Robust automated worker processes in the spirit of Erlang",
   "author": {
     "name": "Bodil Stokke",
@@ -20,7 +20,11 @@
     "high availability",
     "erlang"
   ],
-  "files": ["hellojoe.d.ts", "hellojoe.js", "hellojoe.js.map"],
+  "files": [
+    "hellojoe.d.ts",
+    "hellojoe.js",
+    "hellojoe.js.map"
+  ],
   "scripts": {
     "compile": "tsc",
     "watch": "tsc --watch",
