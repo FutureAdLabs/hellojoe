@@ -2,7 +2,7 @@
 import * as os from "os"
 
 import * as cluster from "cluster";
-import * as merge from "merge";
+import merge from "merge";
 
 import spawnChildProcess from "./childProcess"
 import spawnClusterWorker from "./worker"
@@ -17,31 +17,31 @@ export interface ScaleOptions {
   /**
    * Number of worker processes to spawn.
    */
-  cores?: number;
+  cores: number;
   /**
    * Number of failures permitted before retryDelay activates.
    */
-  retryThreshold?: number;
+  retryThreshold: number;
   /**
    * After a certain number of failures, delay this many milliseconds before restarting workers.
    */
-  retryDelay?: number;
+  retryDelay: number;
   /**
    * If a process runs for less than this time, it's considered a failure.
    */
-  failureThreshold?: number;
+  failureThreshold: number;
   /**
    * Optional path to a worker executable, in which case this Hello Joe instance
    * will spawn workers using the `child_process` module, as opposed to the
    * `cluster` module, and the passed `app` function will be ignored, implying
    * that sockets will not be automatically shared among processes.
    */
-  worker?: string;
+  worker: string;
   /**
    * Command line arguments for worker executable. Must be specified if
    * `worker` is present.
    */
-  workerArgs?: string[];
+  workerArgs: string[];
 }
 
 const defaultLogger = {
@@ -66,10 +66,12 @@ export interface ServeContext {
   options: ScaleOptions
 }
 
-export default function serve(options: ScaleOptions, app?: () => void): void {
+const noApp = () => { throw new Error("No App supplied in serve!") }
+
+export default function serve(options: Partial<ScaleOptions>, app: () => void = noApp): void {
   let i: number;
 
-  options = merge(
+  const opts =  options = merge(
     {
       cores: defaultCores,
       logger: defaultLogger,
@@ -78,33 +80,33 @@ export default function serve(options: ScaleOptions, app?: () => void): void {
       failureThreshold: 5000
     },
     options
-  )
+  ) as ScaleOptions
 
   const log = options.logger;
 
   const ctx: ServeContext = {
-    log: options.logger,
+    log: opts.logger,
     startTimes: {}, // When a chi_pro was started
     failures: 0, // keeping track of retries
-    options
+    options: opts
   }
 
   // Passing down a servecontext as local this when spawning
-  const spawnMore = options.worker ? spawnChildProcess.bind(ctx) : spawnClusterWorker.bind(ctx);
+  const spawnMore = opts.worker ? spawnChildProcess.bind(ctx) : spawnClusterWorker.bind(ctx);
 
   if (cluster.isMaster) {
     // Spawn more overlords
-    for (i = 0; i < options.cores; i++) {
+    for (i = 0; i < opts.cores; i++) {
       spawnMore();
     }
 
-    log.info(
+    ctx.log.info(
       "Spawned",
-      options.cores,
-      options.worker ? "worker processes." : "server instances."
+      opts.cores,
+      opts.worker ? "worker processes." : "server instances."
     );
   } else {
-    log.handleExceptions();
-    options.worker || app();
+    ctx.log.handleExceptions();
+    opts.worker || app();
   }
 }
