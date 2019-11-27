@@ -12,6 +12,7 @@
     "type": "git",
     "url": "https://github.com/FutureAdLabs/hellojoe.git"
   },
+  "types": "./hellojoe.d.ts",
   "keywords": [
     "cluster",
     "scaling",
