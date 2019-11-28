@@ -1,11 +1,10 @@
 
 import * as os from "os"
 
-import * as cluster from "cluster";
-import merge from "merge";
+import merge = require("merge")
 
-import spawnChildProcess from "./childProcess"
-import spawnClusterWorker from "./worker"
+import * as children from "child_process";
+import * as cluster from "cluster";
 
 const defaultCores = os.cpus().length
 
@@ -110,3 +109,99 @@ export default function serve(options: Partial<ScaleOptions>, app: () => void = 
     opts.worker || app();
   }
 }
+
+type W = children.ChildProcess | cluster.Worker
+
+function spawnChildProcess(this: ServeContext): children.ChildProcess {
+  const worker = children.fork(this.options.worker, this.options.workerArgs);
+  this.log.debug(
+    "Spawning worker %s as child process: %j %j",
+    pid(worker),
+    this.options.worker,
+    this.options.workerArgs
+  );
+
+  this.startTimes[pid(worker)] = Date.now();
+
+  worker.on("exit", handleExit.bind(this, worker));
+  return worker;
+}
+
+function spawnClusterWorker(this: ServeContext): cluster.Worker {
+  const worker = cluster.fork();
+  this.log.debug(
+    "Spawning worker %s as child process: %j %j",
+    pid(worker),
+    this.options.worker,
+    this.options.workerArgs
+  );
+
+  this.startTimes[pid(worker)] = Date.now();
+
+  worker.on("listening", addr =>
+    this.log.info(
+      "Process",
+      pid(worker),
+      "is now listening on",
+      addr.address + ":" + addr.port
+    )
+  );
+
+  worker.on("exit", handleExit.bind(this, worker));
+  return worker;
+}
+
+
+
+export function handleExit(this: ServeContext, worker: W, spawnMore: (this: ServeContext) => W, code: number, signal: string) {
+  let replacement: W;
+  const lifetime = Date.now() - this.startTimes[pid(worker)];
+  delete this.startTimes[pid(worker)];
+
+  this.log.info(
+    "Process",
+    pid(worker),
+    "terminated with signal",
+    signal,
+    "code",
+    code + "; restarting."
+  );
+
+  if("suicide" in worker) {
+    this.log.info("Worker", pid(worker), "terminated voluntarily.");
+    return;
+  }
+
+  if (lifetime < this.options.failureThreshold) {
+    this.failures++;
+  } else {
+    this.failures = 0;
+  }
+
+  if (this.failures > this.options.retryThreshold) {
+    this.log.warn(
+      this.failures + " consecutive failures; pausing for",
+      this.options.retryDelay + "ms before respawning."
+    );
+  }
+
+  setTimeout(
+    () => {
+      replacement = spawnMore.call(this);
+      replacement.on("online", () =>
+        this.log.info(
+          "Process",
+          pid(replacement),
+          "has successfully replaced",
+          pid(worker)
+        )
+      );
+    },
+    this.failures > this.options.retryThreshold ? this.options.retryDelay : 0
+  );
+}
+
+export function pid(worker: children.ChildProcess | cluster.Worker): number {
+  return "pid" in worker ? worker.pid : worker.process.pid
+}
+
