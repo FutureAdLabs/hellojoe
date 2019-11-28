@@ -1,6 +1,6 @@
 {
-  "name": "hellojoe",
-  "version": "0.1.0",
+  "name": "@adludio/hellojoe",
+  "version": "1.0.2",
   "description": "Robust automated worker processes in the spirit of Erlang",
   "author": {
     "name": "Bodil Stokke",
@@ -19,15 +19,20 @@
     "high availability",
     "erlang"
   ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "compile": "tsc --declaration --sourcemap --module commonjs --outDir . src/hellojoe.ts",
-    "watch": "tsc --watch --declaration --sourcemap --module commonjs --outDir . src/hellojoe.ts",
+    "compile": "tsc",
+    "watch": "tsc --watch",
     "prepublish": "npm run compile"
   },
   "dependencies": {
-    "typescript": "1.0.0",
-    "merge": "1.1.2",
-    "winston": "0.7.3"
+    "merge": "^1.2.1"
   },
-  "main": "./hellojoe.js"
+  "main": "./dist/hellojoe.js",
+  "devDependencies": {
+    "typescript": "^3.7.2",
+    "@types/node": "^12.12.14"
+  }
 }
