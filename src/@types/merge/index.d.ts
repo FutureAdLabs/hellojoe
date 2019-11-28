@@ -1,3 +1,5 @@
 declare module "merge" {
-  export default function merge<A, B>(a: A, ...b: B[]): A & B;
+  function merge<A, B>(a: A, ...b: B[]): A & B;
+
+  export = merge
 }
