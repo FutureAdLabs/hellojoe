@@ -31,11 +31,11 @@
     "prepublish": "npm run compile"
   },
   "dependencies": {
-    "typescript": "^3.7.2"
+    "merge": "^1.2.1"
   },
   "main": "./hellojoe.js",
   "devDependencies": {
-    "@types/node": "^12.12.14",
-    "merge": "^1.2.1"
+    "typescript": "^3.7.2",
+    "@types/node": "^12.12.14"
   }
 }
